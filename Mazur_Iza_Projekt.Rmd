@@ -15,20 +15,24 @@ output: html_document
     Usunięcie kolumn, które nie będą brane pod uwagę podczas analizy oraz dodatkowe transformacje danych
 4. Analiza wstępna danych
     - Histogramy
-      - actual_productivity, targeted_productivity - histogramy
-      - actual_productivity, department - histogramy
-      - actual_productivity, day - histogramy
-      - actual_productivity, team - histogramy
-      - wybrane zmienne - histogramy
+     - actual_productivity, targeted_productivity - histogramy
+     - actual_productivity, department - histogramy
+     - actual_productivity, day - histogramy
+     - actual_productivity, team - histogramy
+     - wybrane zmienne - histogramy
+    - Zależności pomiędzy wybranymi zmiennymi
+     - actual_productivity - day
+     - actual_productivity - deparment
+     - actual_productivity, a wybrane zmienne
     - Zmienna actual_productivity w czasie (z podziałem na department)
 5. Ustalenie celu - actual_productivity na poziomie min 75% - klasyfikacja
     - Przedstawienie zmiennej goal_productivity
-      - Wykresy wybranych zmiennych z podziałem według goal_productivity
+     - Wykresy wybranych zmiennych z podziałem według goal_productivity
 6. Analiza zaawansowana
     - Budowa modelu regresji liniowej
-      - Sprawdzenie dopasowania modelu
-         - Histogram predict.m1
-         - Krzywa ROC
+     - Sprawdzenie dopasowania modelu
+      - Histogram predict.m1
+      - Krzywa ROC
 
 7. Podsumowanie
 
@@ -285,7 +289,107 @@ ggarrange(w1,w2,w3,w4,
 
 ```
 
+#### Zależności pomiędzy wybranymi zmiennymi
 
+
+
+
+##### actual_productivity - day
+
+
+
+```{r}
+
+q1 <- ggplot(data=df)+
+  geom_boxplot(aes(x=day, y=actual_productivity,fill=day),alpha=0.5)
+
+q2 <-ggplot(data=df)+
+  geom_violin(aes(x=day, y=actual_productivity), fill="blue3", alpha=0.2)
+
+
+ggarrange(q1,q2 + rremove("x.text"),
+          ncol = 1, nrow = 2)
+
+```
+
+
+
+##### actual_productivity - deparment
+
+
+
+
+```{r}
+
+z1 <-ggplot(data=df)+
+  geom_boxplot(aes(x=department, y=actual_productivity,fill=department),alpha=0.5)
+
+z2 <-ggplot(data=df,aes(x=department, y=actual_productivity))+
+  geom_jitter(color="violet",
+             size=4,
+             alpha=0.3,
+             position = position_jitter(width=0.2))+
+              geom_violin(alpha=0.2, fill="blue3")
+
+df2 <- df %>%
+  dplyr::group_by(department) %>% 
+  summarise(
+    avg_actual_productivity=round(mean(actual_productivity),2))
+
+z3 <-ggplot(data=df2) +
+  geom_bar(aes(x=department, y=  avg_actual_productivity), 
+           stat='identity')+
+  geom_text (aes(label= avg_actual_productivity, x=department,
+y= avg_actual_productivity))
+
+
+
+
+ggarrange(z1,z2,z3,
+          ncol = 2, nrow =2,widths=c(350,360,400))
+```
+
+
+
+
+##### actual_productivity, a wybrane zmienne 
+
+
+
+```{r}
+p1 <-ggplot(data=df,aes(x=targeted_productivity, y=actual_productivity))+
+  geom_point(color="violet",
+             size=4,
+             alpha=0.3,
+             position = position_jitter(width=0.2))+
+  theme_light()
+
+p2 <-ggplot(data=df,aes(x=smv, y=actual_productivity))+
+  geom_point(color="violet",
+             size=4,
+             alpha=0.3,
+             position = position_jitter(width=0.2))+
+  theme_light()
+
+
+p3 <-ggplot(data=df,aes(x=over_time, y=actual_productivity))+
+  geom_point(color="violet",
+             size=4,
+             alpha=0.3,
+             position = position_jitter(width=0.2))+
+  theme_light()
+
+p4 <-ggplot(data=df,aes(x=no_of_workers, y=actual_productivity))+
+  geom_point(color="violet",
+             size=4,
+             alpha=0.3,
+             position = position_jitter(width=0.2))+
+  theme_light()
+
+ggarrange(p1,p2,p3,p4 + rremove("x.text"),
+          ncol = 2, nrow = 2)
+
+```
 
 
 #### Zmienna actual_productivity w czasie (z podziałem na department)
