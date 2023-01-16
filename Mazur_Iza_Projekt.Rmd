@@ -678,15 +678,30 @@ conf.matrix.glm2
 ```
 
 
-
 ## Podsumowanie
 
+Z analizy wstępnej danycyh wynika, ze actual_productivity wynosi między około 20 a 110%. Skupia się głownie w przedziale 60% - 90%. Z kolei targeted_productivity oscylujue głównie w okolicach 70-80%.W przypadku podziału na departamenty widać, ze w przypadku finishing actual_productivity skupia się głównie w okolicach 60% i 90%. Rozkład jest też bardziej równomierny, niż w przypadku sweing. Tutaj dominuje produktywność na poziomie 80%.
 
-W pracy zbudowano model regresji liniowej oparty o następujące zmienne, których wybór opierał się na poprzedniej analzie: targeted_productivity,smv ,over_time ,incentive, no_of_workers,department.
+W przypadku podziału na dzień tygodnia histogramy maja zbliżoną budowę. Niewielkie różnice w actual_productivity są również widoczne w przypadku podziałów na teamy. Jedynie team 12 wyróżnia się wysokim udziałem produktywności na poziomie 80%.
+
+Analizując pozostałe zmienne można zauważyć, ze smv, czyli przydzielony czas na zadnie, przyjmuje głównie wartości między 2,a 30 minut. Nadgodziny zespołu oscylują przede wszystkim między 0, a 1010 min.  Zachęty finansowe przede wszystkim wynosiły 0, pozostałe kwoty rozłożyły się między 20 a 75. Jak chodzi o liczbę pracowników w zespołach, to dominowały zespoły około 10 osobowe, 35 osobowe i 60 osobowe.
+
+Z dalszej części analizy widać, ze nie ma wyraźnej zależności między dniem, a actual_productivity. Widać, że wielkość actual_prodductivity jest bardziej skoncentrowana w przypadku departamentu sweing, niż finishing. Średnia produktywność dla sweing wynosi 70,1%, a dla finishing jest wyższa i wynosi75,3%. 
+
+Ciężko jest przedstawić jasne wnioski z wykresów zmiennej actual_productivity, a targeted_productivity, smv, over_time i no_of_workers. Wynika to z tego, że zmienne te nie były równo rozłożone i występowały w skupieniach (np. smv bardzo często przyjmowało wartość 0).
+
+Nie zaobserwowano znaczącej zależności między poziomem actual_productivity, a czasem (date). Możliwe, ze wynika to z faktu, że zakres obejmował jedynie kilka miesięcy.
+
+W kolejnej części dodano zmienną goal_productivity, przyjmującą wartość 0 lub 1 (act_prod >75%). Udział obserwacji, w przypadku których cel osiągnięto wynosił 59%, a cel nie został osiągnięty w przypadku 41%.
+
+Następnie zbudowano model regresji liniowej oparty o następujące zmienne, których wybór opierał się na poprzedniej analzie: targeted_productivity,smv ,over_time ,incentive, no_of_workers,department.
 
 Wybrane zmienne okazały się być istotne, przy poziomie istotności alfa=5%. 
 
-Najczęściej przewidywane wartości występowały między 60, a 80%.  AUC wyniosło 0.79. Jest to wynik zadowalający. 
+Najczęściej przewidywane wartości występowały między 60, a 80%.  AUC wyniosło 0.79. Jest to wynik zadowalający. Zaproponowany próg odcięcia wyniósł 0.5 i w tym przypadku dokładność trafień (accuracy) wynosiła 74%.
+
+Zastosowano również metodę drzewa decyzyjnego, wybierając ten sam zestaw zmiennych. Krzywa ROC decyzyjnego  znajdowała się powyżej linii wskazującej wybór losowy. AUC wynosi 0.88, co przewyższa wynik z modelu, który wykorzystuje regresję. W tym przypadku dla progu odcięcia 0.5 accuracy wynosi 82% 
+
 
 
 
