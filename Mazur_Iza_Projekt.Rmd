@@ -1,0 +1,493 @@
+---
+title: "projekt_mazur_iza0"
+author: "Iza mazur"
+date: "2023-01-16"
+output: html_document
+---
+
+## Spis treści 
+
+1. Źródło danych i definicja problemu
+2. Zmienne
+3. Załadowanie danych
+    Przedstawienie danych oraz typów zmiennych
+    Zmiana typu zmiennej date ze string na date
+    Usunięcie kolumn, które nie będą brane pod uwagę podczas analizy oraz dodatkowe transformacje danych
+4. Analiza wstępna danych
+    - Histogramy
+      - actual_productivity, targeted_productivity - histogramy
+      - actual_productivity, department - histogramy
+      - actual_productivity, day - histogramy
+      - actual_productivity, team - histogramy
+      - wybrane zmienne - histogramy
+    - Zmienna actual_productivity w czasie (z podziałem na department)
+5. Ustalenie celu - actual_productivity na poziomie min 75% - klasyfikacja
+    - Przedstawienie zmiennej goal_productivity
+      - Wykresy wybranych zmiennych z podziałem według goal_productivity
+6. Analiza zaawansowana
+    - Budowa modelu regresji liniowej
+      - Sprawdzenie dopasowania modelu
+         - Histogram predict.m1
+         - Krzywa ROC
+
+7. Podsumowanie
+
+
+
+
+## Źródło danych i definicja problemu
+
+Dane pochodzą ze strony http://archive.ics.uci.edu/ml/datasets/Productivity+Prediction+of+Garment+Employees#
+
+Dane dotycza produktywności pracowników zatrudnionych w przemyśle odzieżowym. Początkowo dane zawierają 15 zmiennych oraz 1197 obserwacji.
+
+###### Zdefiniowanie problemu: Czynniki wpływające na osiągnięcie produktywności na poziomie min 75%
+
+
+
+
+
+## Zmienne
+
+Zbiór zawiera 15 następujacych zmiennych:
+1. date : Date in MM-DD-YYYY
+2. day : Day of the Week
+3. quarter : A portion of the month. A month was divided into four quarters
+4. department : Associated department with the instance
+5. team_no : Associated team number with the instance
+6. no_of_workers : Number of workers in each team
+7. no_of_style_change : Number of changes in the style of a particular product
+8. targeted_productivity : Targeted productivity set by the Authority for each team for each day.
+9. smv : Standard Minute Value, it is the allocated time for a task
+10. wip : Work in progress. Includes the number of unfinished items for products
+11. over_time : Represents the amount of overtime by each team in minutes
+12. incentive : Represents the amount of financial incentive (in BDT) that enables or motivates a particular course of action.
+13. idle_time : The amount of time when the production was interrupted due to several reasons
+14. idle_men : The number of workers who were idle due to production interruption
+15. actual_productivity : The actual % of productivity that was delivered by the workers. It ranges from 0-1.
+
+
+
+
+## Załadowanie danych
+
+
+
+```{r}
+install.packages("ggpubr")
+
+install.packages('caret')
+
+```
+
+
+```{r}
+#library(SparkR)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+
+library(pROC)
+library(rpart)
+
+library(ggpubr)
+#library(ggcorrplot)
+
+```
+
+
+```{r}
+data<-read.csv("C:/R_zajecia/garments_worker_productivity_new.csv",
+                header=T,
+                sep=",")
+
+d <- as.data.frame(data)
+```
+
+
+
+##### Przedstawienie danych oraz typów zmiennych
+
+
+
+
+```{r}
+d
+```
+
+
+```{r}
+str(df)
+```
+
+
+
+##### Zmiana typu zmiennej date ze string na date
+
+
+
+```{r}
+d$date <- as.Date(d$date, format= "%m/%d/%Y")
+```
+
+
+```{r}
+str(d)
+```
+
+
+
+##### Usunięcie kolumn, które nie będą brane pod uwagę podczas analizy  oraz dodatkowe transformacje danych
+
+
+
+```{r}
+df=subset(d, select=-c(wip,idle_time,idle_men,no_of_style_change,quarter))
+```
+
+
+```{r}
+df['actual_productivity']=100*df['actual_productivity']
+df['targeted_productivity']=100*df['targeted_productivity']
+
+```
+
+
+```{r}
+df
+```
+
+
+```{r}
+summary(df)
+```
+
+
+
+## Analiza wstępna danych
+
+
+#### Histogramy
+
+
+##### actual_productivity, targeted_productivity - histogramy
+
+
+
+```{r}
+u1 <-ggplot(data=df) +
+  geom_histogram (aes(x=actual_productivity, y=after_stat(density)), fill="blue", alpha=0.5, binwidth=2)+
+  geom_density (aes(x=actual_productivity), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(actual_productivity)), lty=3, color="pink")
+
+u2 <-ggplot(data=df) +
+  geom_histogram (aes(x=targeted_productivity, y=after_stat(density)), fill="blue", alpha=0.5, binwidth=2)+
+  geom_density (aes(x=targeted_productivity), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(targeted_productivity)), lty=3, color="pink")
+
+
+
+ggarrange(u1,u2,
+          ncol = 1, nrow = 2)
+```
+
+
+```{r}
+ggplot(data=df) +
+  geom_histogram (aes(x=actual_productivity, y=after_stat(density), fill="actual_productivity"), alpha=0.5, binwidth=2)+
+  geom_density (aes(x=actual_productivity), color="grey24", fill="black", alpha=0.15)+
+  geom_histogram (aes(x=targeted_productivity, y=after_stat(density), fill="targeted_productivity"), alpha=0.5, binwidth=2)+
+  geom_density (aes(x=targeted_productivity), color="violet", fill="purple4", alpha=0.15)+theme_light()+
+  scale_fill_manual(values = c("grey24", "violet"), name="")+
+  labs(x="Productivity %")
+```
+
+
+
+##### actual_productivity, department - histogramy
+
+
+
+```{r}
+ggplot(data=df) +
+  geom_histogram (aes(x=actual_productivity, y=after_stat(density)), fill="blue", alpha=0.5, binwidth=3)+
+  geom_density (aes(x=actual_productivity), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(actual_productivity)), lty=3, color="pink")+
+    facet_wrap(~department)
+```
+
+
+```{r}
+ggplot(data=df) + geom_histogram(aes(x=actual_productivity, fill= department),alpha=0.7, binwidth=1)+
+  scale_fill_manual(values = c("grey24", "violet"))
+```
+
+
+
+##### actual_productivity, day - histogramy
+
+
+
+```{r}
+ggplot(data=df) +
+  geom_histogram (aes(x=actual_productivity, y=..density..), fill="blue", alpha=0.5, binwidth=3)+
+  geom_density (aes(x=actual_productivity), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(actual_productivity)), lty=3, color="pink")+
+    facet_wrap(~day)
+```
+
+
+
+##### actual_productivity, team - histogramy
+
+
+
+```{r}
+ggplot(data=df) +
+  geom_histogram (aes(x=actual_productivity, y=..density..), fill="blue", alpha=0.5, binwidth=3)+
+  geom_density (aes(x=actual_productivity), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(actual_productivity)), lty=3, color="pink")+
+    facet_wrap(~team)
+```
+
+
+
+##### wybrane zmienne - histogramy
+
+
+
+```{r}
+
+w1 <- ggplot(data=df) +
+  geom_histogram (aes(x=smv, y=..density..), fill="blue", alpha=0.5, binwidth=1)+
+  geom_density (aes(x=smv), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(smv)), lty=3, color="pink")
+
+w2 <-ggplot(data=df) +
+  geom_histogram (aes(x=over_time, y=..density..), fill="blue", alpha=0.5, binwidth=500)+
+  geom_density (aes(x=over_time), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(over_time)), lty=3, color="pink")
+
+df <- subset(df,incentive<100)
+
+w3 <-ggplot(data=df) +
+  geom_histogram (aes(x=incentive, y=..density..), fill="blue", alpha=0.5, binwidth=1)+
+  geom_density (aes(x=incentive), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(incentive)), lty=3, color="pink")
+
+w4 <-ggplot(data=df) +
+  geom_histogram (aes(x=no_of_workers, y=..density..), fill="blue", alpha=0.5, binwidth=1)+
+  geom_density (aes(x=no_of_workers), color="red3", fill="red3", alpha=0.15)+
+  geom_vline (aes(xintercept = mean(no_of_workers)), lty=3, color="pink")
+
+ggarrange(w1,w2,w3,w4,
+          ncol = 2, nrow = 2)
+
+```
+
+
+
+
+#### Zmienna actual_productivity w czasie (z podziałem na department)
+
+
+
+```{r}
+ggplot(data=df)+
+  geom_point(aes(x = date, y = actual_productivity, color = department)) +
+  ylab("actual_productivity %")+
+  scale_color_manual(values = c("grey24", "violet"))
+```
+
+
+
+## Ustalenie celu - actual_productivity na poziomie min 75% - klasyfikacja
+Dodanie zmiennej goal_productivity(0,1) na podstawie zmiennej actual_productivity
+
+
+
+```{r}
+df$actual_productivity
+```
+
+
+```{r}
+df$goal_productivity <- ifelse(df$actual_productivity>75,1,0)
+
+```
+
+
+```{r}
+df
+```
+
+
+
+### Przedstawienie zmiennej goal_productivity
+
+
+
+```{r}
+c <-(df$goal_productivity)
+c <- df%>% 
+  group_by(goal_productivity) %>%
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = `n` / sum(`n`)) %>% 
+  arrange(perc) %>%
+  mutate(labels = scales::percent(perc))
+c
+```
+
+
+```{r}
+ggplot(c, aes(x = "", y = perc, fill = labels)) +
+  geom_col(col="white") +
+  geom_text(aes(label = labels),position = position_stack(vjust = 0.5),col="black",size=7) +
+  coord_polar(theta = "y")+
+  scale_fill_manual(values = c("lightsteelblue3", "violet"), name="goal_productivity", labels=c("No", "Yes"))+
+  theme_void()
+```
+
+
+
+#### Wykresy wybranych zmiennych z podziałem według goal_productivity
+
+
+
+```{r}
+sample1=filter(df, goal_productivity==0)
+sample2=filter(df, goal_productivity==1)
+```
+
+
+```{r}
+a1 <-ggplot(NULL,aes(,density)) +
+  geom_bar (data=sample1,aes(x=targeted_productivity,y = (..count..)/sum(..count..),fill="No"), alpha=0.7)+
+  geom_bar (data=sample2,aes(x=targeted_productivity, y = (..count..)/sum(..count..), fill="Yes"), alpha=0.7)+
+xlim(0,100)+
+theme_light()+
+scale_fill_manual(values = c("lightsteelblue3", "violet"), name="goal_productivity")
+
+a2 <-ggplot(NULL,aes(,density)) +
+  geom_bar (data=sample1,aes(x=over_time,y = (..count..)/sum(..count..),fill="No"), alpha=0.5)+
+  geom_bar (data=sample2,aes(x=over_time, y = (..count..)/sum(..count..), fill="Yes"), alpha=0.5)+
+xlim(0,3000)+
+theme_light()+
+scale_fill_manual(values = c("lightsteelblue3", "violet"), name="goal_productivity")
+
+
+a3 <-ggplot(NULL,aes(,density)) +
+  geom_bar (data=sample1,aes(x=incentive,y = (..count..)/sum(..count..),fill="No"), alpha=0.9)+
+  geom_bar (data=sample2,aes(x=incentive, y = (..count..)/sum(..count..), fill="Yes"), alpha=0.5)+
+xlim(0,100)+
+ylim(0,0.15)+
+theme_light()+
+scale_fill_manual(values = c("lightsteelblue3", "violet"), name="goal_productivity")
+
+a4 <-ggplot(NULL,aes(,density)) +
+  geom_bar (data=sample1,aes(x=no_of_workers,y = (..count..)/sum(..count..),fill="No"), alpha=0.9)+
+  geom_bar (data=sample2,aes(x=no_of_workers, y = (..count..)/sum(..count..), fill="Yes"), alpha=0.5)+
+xlim(0,90)+
+ylim(0,0.15)+
+theme_light()+
+scale_fill_manual(values = c("lightsteelblue3", "violet"), name="goal_productivity")
+
+ggarrange(a1,a2,a3,a4 + rremove("x.text"),
+          ncol = 2, nrow = 2,common.legend = TRUE,legend="bottom")
+
+```
+
+
+
+## Analiza zaawansowana
+
+
+
+
+### Budowa modelu regresji liniowej
+
+
+
+```{r}
+library(caret)
+```
+
+
+```{r}
+set.seed(3123)
+n = nrow(df)
+i=floor(0.75*n)
+s= sample.int(n, i, replace=F)
+
+df.train = df[s,]
+df.test = df[-s,]
+nrow(df.test)
+```
+
+
+```{r}
+m1 <- glm(data=df.train, goal_productivity~ targeted_productivity + smv + over_time + incentive + no_of_workers + department, family='binomial')
+```
+
+
+```{r}
+summary(m1)
+```
+
+
+### Sprawdzenie dopasowania modelu
+
+```{r}
+predict.m1 <- predict(m1, newdata=df.test, type='response')
+```
+
+
+```{r}
+predict.m1
+```
+
+
+
+##### Histogram predict.m1
+
+
+
+```{r}
+hist(predict.m1)
+```
+
+
+
+##### Krzywa ROC
+
+
+
+```{r}
+roc.m1 <- roc(df.test$goal_productivity, predict.m1)
+
+plot(roc.m1)
+
+print(roc.m1$auc)
+```
+
+
+```{r}
+predict.m1
+```
+
+
+
+
+
+
+## Podsumowanie
+
+
+W pracy zbudowano model regresji liniowej oparty o następujące zmienne, których wybór opierał się na poprzedniej analzie: targeted_productivity,smv ,over_time ,incentive, no_of_workers,department.
+
+Wybrane zmienne okazały się być istotne, przy poziomie istotności alfa=5%. 
+
+Najczęściej przewidywane wartości występowały między 60, a 80%.  AUC wyniosło 0.79. Jest to wynik zadowalający. 
+
+
