@@ -33,7 +33,8 @@ output: html_document
      - Sprawdzenie dopasowania modelu
       - Histogram predict.m1
       - Krzywa ROC
-
+      - Wybór progu odcięcia
+      - Macierz błędu
 7. Podsumowanie
 
 
@@ -289,6 +290,8 @@ ggarrange(w1,w2,w3,w4,
 
 ```
 
+
+
 #### Zależności pomiędzy wybranymi zmiennymi
 
 
@@ -390,6 +393,7 @@ ggarrange(p1,p2,p3,p4 + rremove("x.text"),
           ncol = 2, nrow = 2)
 
 ```
+
 
 
 #### Zmienna actual_productivity w czasie (z podziałem na department)
@@ -582,6 +586,36 @@ predict.m1
 
 
 
+##### Wybór progu odcięcia
+
+
+
+```{r}
+roc.m1$thresholds
+```
+
+
+
+##### Macierz błędu
+
+
+
+```{r}
+conf.matrix.glm <- confusionMatrix(as.factor(ifelse(predict.m1>0.4,1,0)),as.factor(df.test$goal_productivity))
+conf.matrix.glm
+```
+
+
+```{r}
+conf.matrix.glm <- confusionMatrix(as.factor(ifelse(predict.m1>0.5,1,0)),as.factor(df.test$goal_productivity))
+conf.matrix.glm
+```
+
+
+```{r}
+conf.matrix.glm <- confusionMatrix(as.factor(ifelse(predict.m1>0.6,1,0)),as.factor(df.test$goal_productivity))
+conf.matrix.glm
+```
 
 
 
@@ -593,5 +627,7 @@ W pracy zbudowano model regresji liniowej oparty o następujące zmienne, który
 Wybrane zmienne okazały się być istotne, przy poziomie istotności alfa=5%. 
 
 Najczęściej przewidywane wartości występowały między 60, a 80%.  AUC wyniosło 0.79. Jest to wynik zadowalający. 
+
+
 
 
