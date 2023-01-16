@@ -35,6 +35,11 @@ output: html_document
       - Krzywa ROC
       - Wybór progu odcięcia
       - Macierz błędu
+    - Drzewo decyzyjne
+     - Analiza wybranej metody
+      - Wykres- rozmiar drzewa
+      - Krzywa ROC
+      - Macierz błędu
 7. Podsumowanie
 
 
@@ -619,6 +624,61 @@ conf.matrix.glm
 
 
 
+### Drzewo decyzyjne
+
+
+
+```{r}
+m2 <- rpart(data =df.train, goal_productivity~ targeted_productivity + smv + over_time + incentive + no_of_workers + department)
+m2
+```
+
+
+
+### Analiza wybranej metody
+
+
+
+
+##### Wykres- rozmiar drzewa
+
+
+
+```{r}
+plotcp(m2)
+```
+
+
+
+##### Krzywa ROC
+
+
+
+```{r}
+predict.m2 <- predict(m2, newdata=df.test, type='vector')
+roc.m2 <- roc(df.test$goal_productivity, predict.m2)
+```
+
+
+```{r}
+plot(roc.m2)
+print(m2$auc)
+print(roc.m2$auc)
+```
+
+
+
+##### Macierz błędu
+
+
+
+```{r}
+conf.matrix.glm2 <- confusionMatrix(as.factor(ifelse(predict.m2>0.5,1,0)),as.factor(df.test$goal_productivity))
+conf.matrix.glm2
+```
+
+
+
 ## Podsumowanie
 
 
@@ -627,6 +687,8 @@ W pracy zbudowano model regresji liniowej oparty o następujące zmienne, który
 Wybrane zmienne okazały się być istotne, przy poziomie istotności alfa=5%. 
 
 Najczęściej przewidywane wartości występowały między 60, a 80%.  AUC wyniosło 0.79. Jest to wynik zadowalający. 
+
+
 
 
 
